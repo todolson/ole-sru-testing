@@ -67,7 +67,7 @@ choosereq ()
    done
 }
 
-prereqs mktemp curl
+prereqs mktemp curl xmllint
 
 # handy functions
 
@@ -123,6 +123,7 @@ NUM_FAILED=0
 failure () {
    NUM_FAILED=$(($NUM_FAILED + 1))
    echo "FAILED: $*" 1>&2
+   echo 1>&2
 }
 
 ##
@@ -163,9 +164,9 @@ cleanup () {
 test_startRecord_0 () {
     # Direct URL for searching title=test and author="Keith Welch"
     # should have exactly 1 result
-    URL=${SRU_HOST}'/sru?version=1.2&operation=searchRetrieve&query=history&startRecord=0&maximumRecords=0&recordSchema=marcxml'
+    local URL=${SRU_HOST}'/sru?version=1.2&operation=searchRetrieve&query=history&startRecord=0&maximumRecords=0&recordSchema=marcxml'
 
-    STARTRECORD_0_XML=${TMP_DIR}/srutest-startRecord_0_$$.xml
+    local STARTRECORD_0_XML=${TMP_DIR}/srutest-startRecord_0_$$.xml
     add_tmp_file $STARTRECORD_0_XML
 
     if curl -s -S --write-out '<!-- http_code=%{http_code} -->' $URL > $STARTRECORD_0_XML
@@ -189,11 +190,11 @@ test_startRecord_0 () {
 #
 
 test_startRecord_1 () {
-    # Direct URL for searching title=test and author="Keith Welch"
+    # Direct URL for searching for record wbm-13 (001 in general keyword)
     # should have exactly 1 result
-    URL=${SRU_HOST}'/sru?version=1.2&operation=searchRetrieve&query=title%3Dtest%20and%20author%3D%22Keith%20Welch%22&startRecord=1&maximumRecords=1&recordSchema=marcxml'
+    local URL=${SRU_HOST}'/sru?version=1.2&operation=searchRetrieve&query=wbm-13&startRecord=1&maximumRecords=1&recordSchema=marcxml'
 
-    STARTRECORD_1_XML=${TMP_DIR}/srutest-startRecord_1_$$.xml
+    local STARTRECORD_1_XML=${TMP_DIR}/srutest-startRecord_1_$$.xml
     add_tmp_file $STARTRECORD_1_XML
 
     if curl -s -S --write-out '<!-- http_code=%{http_code} -->' $URL > $STARTRECORD_1_XML
@@ -209,6 +210,94 @@ test_startRecord_1 () {
     fi
 }
 
+#
+# Check that a missing version parameter triggers an appropriate message
+#
+test_version_missing () {
+    URL=${SRU_HOST}'/sru?operation=searchRetrieve&query=history&startRecord=1&maximumRecords=0&recordSchema=marcxml'
+
+    VERSION_REQUIRED_XML=${TMP_DIR}/srutest-version-required-$$.xml
+    add_tmp_file $VERSION_REQUIRED_XML
+
+    if curl -s -S --write-out '<!-- http_code=%{http_code} -->' $URL > $VERSION_REQUIRED_XML
+    then
+        if ! grep '<[a-zA-Z]*:diagnostics>' $VERSION_REQUIRED_XML >/dev/null
+        then
+            failure "missing version parameter should return a diagnotic"
+        elif ! grep 'Mandatory parameter not supplied' $VERSION_REQUIRED_XML >/dev/null
+	then 
+	    failure "missing version parameter should trigger diagnostic info:srw/diagnostic/1/7, 'Mandatory parameter not supplied'"
+        fi
+    else
+        fatal "Failed to retrieve $URL"
+    fi
+}
+
+#
+# Check what happens when we ask for version=1.1
+#
+test_version_1_1 () {
+    URL=${SRU_HOST}'/sru?version=1.1&operation=searchRetrieve&query=history&maximumRecords=2&recordSchema=marcxml'
+
+    VERSION_1_1_SCHEMA=xsd/srw/srw-types.xsd
+
+    VERSION_1_1_XML=${TMP_DIR}/srutest-version_1_1_$$.xml
+    add_tmp_file $VERSION_1_1_XML
+
+    if ! curl -s -S --write-out '<!-- http_code=%{http_code} -->' $URL > $VERSION_1_1_XML
+    then
+        fatal "Failed to retrieve $URL"
+	return
+    fi
+
+    #
+    # TODO: check for diagnostic if version is not supported
+    #
+    # for example, see:
+    # http://z3950.loc.gov:7090/voyager?version=1.2&operation=searchRetrieve&query=dinosaur
+
+    if ! xmllint --schema $VERSION_1_1_SCHEMA $VERSION_1_1_XML
+    then
+	failure "search response failed to validate
+  URL=$URL"
+	return
+    fi
+
+}
+
+
+#
+# Check what happens when we ask for version=1.1
+#
+test_version_1_2 () {
+    URL=${SRU_HOST}'/sru?version=1.2&operation=searchRetrieve&query=history&maximumRecords=2&recordSchema=marcxml'
+
+    local VERSION_1_2_SCHEMA=xsd/search-ws/sruResponse.xsd
+    local VERSION_1_2_XML=${TMP_DIR}/srutest-version_1_2_$$.xml
+    add_tmp_file $VERSION_1_2_XML
+
+    if ! curl -s -S --write-out '<!-- http_code=%{http_code} -->' $URL > $VERSION_1_2_XML
+    then
+        fatal "Failed to retrieve $URL"
+	return
+    fi
+
+    #
+    # TODO: check for diagnostic if version is not supported
+    #
+    # for example, see:
+    # http://z3950.loc.gov:7090/voyager?version=1.2&operation=searchRetrieve&query=dinosaur
+
+    if ! xmllint --schema $VERSION_1_2_SCHEMA $VERSION_1_2_XML
+    then
+	failure "search response failed to validate
+  URL=$URL"
+	return
+    fi
+
+}
+
+
 # main
 
 trap 'exit 3' 1 2 3 15
@@ -219,8 +308,17 @@ then PREFIX=TEST
 else PREFIX=DATA
 fi
 
+echo
+echo '### Testing SRU parameter startRecord'
+echo
 test_startRecord_0
 test_startRecord_1
+echo
+echo '### Testing SRU parameter version'
+echo
+test_version_missing
+test_version_1_1
+test_version_1_2
 
 if [ $NUM_FAILED -gt 0 ]
 then
