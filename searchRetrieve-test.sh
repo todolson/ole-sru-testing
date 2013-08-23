@@ -13,6 +13,14 @@ AUTHOR="Tod Olson"
 
 # START CONFIGURE
 SRU_HOST=${SRU_HOST:-http://tst.docstore.ole.kuali.org}
+SRU_BASE="${SRU_HOST}/sru"
+echo "TEMPORARY hack: use SRU 1.1 until development switched namespaces - TAO 2013-08-23"
+SRU_VERSION_DFLT=1.1
+#SRU_VERSION_DFLT=1.2
+
+SRU_1_1_SCHEMA=xsd/srw/srw-types.xsd
+SRU_1_2_SCHEMA=xsd/search-ws/sruResponse.xsd
+
 TMP_DIR=${TMP_DIR:-/tmp}
 # END CONFIGURE
 
@@ -67,7 +75,7 @@ choosereq ()
    done
 }
 
-prereqs mktemp curl xmllint
+prereqs mktemp curl xmllint xsltproc perl
 
 # handy functions
 
@@ -117,6 +125,9 @@ do
    esac
 done
 
+#
+# Test support functions
+#
 
 NUM_FAILED=0
 
@@ -125,6 +136,100 @@ failure () {
    echo "FAILED: $*" 1>&2
    echo 1>&2
 }
+
+#
+# Set up some basic environement for any test
+#
+test_env_init() {
+    SRU_VERSION=$SRU_VERSION_DFLT
+    OPERATION=searchRetrieve
+    RECORD_SCHEMA=marcxml
+    unset URL
+    unset MAX_RECS
+    unset START_REC
+    unset QUERY
+}
+
+#
+# Construct an SRU URL based on environemt variables
+#
+sru_url() {
+URL="${SRU_BASE}?operation=${OPERATION}"
+if [ ! -z "$SRU_VERSION" ]
+then
+    URL="${URL}&version=${SRU_VERSION}"
+fi
+if [ ! -z "$MAX_RECS" ]
+then
+    URL="${URL}&maximumRecords=${MAX_RECS}"
+fi
+if [ ! -z "$START_REC" ]
+then
+    URL="${URL}&startRecord=${START_REC}"
+fi
+if [ ! -z "$QUERY" ]
+then
+    URL="${URL}&query=${QUERY}"
+fi
+if [ ! -z "$RECORD_SCHEMA" ]
+then
+    URL="${URL}&recordSchema=${RECORD_SCHEMA}"
+fi
+}
+
+#
+# echo the schema file to use for validation
+#
+get_sru_schema() {
+    local sru_version=""
+    case "$1" in
+	"1.1" )
+	    sru_schema="$SRU_1_1_SCHEMA";;
+	"1.2" )
+	    sru_schema="$SRU_1_2_SCHEMA";;
+    esac
+    echo ${sru_schema}
+}
+
+#
+# set $SRU_SCHEMA the schema file to use for validation
+#
+set_sru_schema() {
+    case "$1" in
+	"1.1" )
+	    SRU_SCHEMA="$SRU_1_1_SCHEMA";;
+	"1.2" )
+	    SRU_SCHEMA="$SRU_1_2_SCHEMA";;
+	*)
+	    SRU_SCHEMA=""
+	    return 1;;
+    esac
+    return 0
+}
+
+#
+# URL-encode first argument
+#
+# Taken from 
+# http://stackoverflow.com/questions/296536/urlencode-from-a-bash-script
+#
+rawurlencode() {
+  local string="${1}"
+  local strlen=${#string}
+  local encoded=""
+
+  for (( pos=0 ; pos<strlen ; pos++ )); do
+     c=${string:$pos:1}
+     case "$c" in
+        [-_.~a-zA-Z0-9] ) o="${c}" ;;
+        * )               printf -v o '%%%02x' "'$c"
+     esac
+     encoded+="${o}"
+  done
+  echo "${encoded}"    # You can either set a return variable (FASTER) 
+  REPLY="${encoded}"   #+or echo the result (EASIER)... or both... :p
+}
+
 
 ##
 #
@@ -162,23 +267,25 @@ cleanup () {
 #
 
 test_startRecord_0 () {
-    # Direct URL for searching title=test and author="Keith Welch"
-    # should have exactly 1 result
-    local URL=${SRU_HOST}'/sru?version=1.2&operation=searchRetrieve&query=history&startRecord=0&maximumRecords=0&recordSchema=marcxml'
+    test_env_init
+    QUERY=history
+    START_REC=0
+    sru_url
+    echo "URL = $URL"
+    
+    local tmp_file=${TMP_DIR}/srutest-startRecord_0_$$.xml
+    add_tmp_file $tmp_file
 
-    local STARTRECORD_0_XML=${TMP_DIR}/srutest-startRecord_0_$$.xml
-    add_tmp_file $STARTRECORD_0_XML
-
-    if curl -s -S --write-out '<!-- http_code=%{http_code} -->' $URL > $STARTRECORD_0_XML
+    if curl -s -S --write-out '<!-- http_code=%{http_code} -->' $URL > $tmp_file
     then
-        if grep '<[a-zA-Z]*:numberOfRecords>' $STARTRECORD_0_XML >/dev/null
+        if grep '<[a-zA-Z]*:numberOfRecords>' $tmp_file >/dev/null
         then
             failure "startRecord = 0 should return a diagnotic"
         else
             return
         fi
     else
-        fatal "Failed to retrieve $URL"
+        failure "Failed to retrieve URL"
     fi
 }
 
@@ -190,18 +297,22 @@ test_startRecord_0 () {
 #
 
 test_startRecord_1 () {
-    # Direct URL for searching for record wbm-13 (001 in general keyword)
-    # should have exactly 1 result
-    local URL=${SRU_HOST}'/sru?version=1.2&operation=searchRetrieve&query=wbm-13&startRecord=1&maximumRecords=1&recordSchema=marcxml'
+    test_env_init
+    # query for record wbm-13 (001 in general keyword) should have
+    # exactly 1 result
+    QUERY=wbm-13
+    START_REC=1
+    sru_url
+    echo "URL = $URL"
 
-    local STARTRECORD_1_XML=${TMP_DIR}/srutest-startRecord_1_$$.xml
-    add_tmp_file $STARTRECORD_1_XML
+    local tmp_file=${TMP_DIR}/srutest-startRecord_1_$$.xml
+    add_tmp_file $tmp_file
 
-    if curl -s -S --write-out '<!-- http_code=%{http_code} -->' $URL > $STARTRECORD_1_XML
+    if curl -s -S --write-out '<!-- http_code=%{http_code} -->' $URL > $tmp_file
     then
-        if grep '<diagnostic>' $STARTRECORD_1_XML >/dev/null
+        if grep '<diagnostic>' $tmp_file >/dev/null
         then
-            failure "startRecord = 1 does not return first record; diagnostic: " $(sed -n -e '/<diagnostic>/,/<\/diagnostic>/p' $STARTRECORD_1_XML)
+            failure "startRecord = 1 does not return first record; diagnostic: " $(sed -n -e '/<diagnostic>/,/<\/diagnostic>/p' $tmp_file)
         else
             return
         fi
@@ -214,22 +325,30 @@ test_startRecord_1 () {
 # Check that a missing version parameter triggers an appropriate message
 #
 test_version_missing () {
-    URL=${SRU_HOST}'/sru?operation=searchRetrieve&query=history&startRecord=1&maximumRecords=0&recordSchema=marcxml'
+    test_env_init
+    unset SRU_VERSION
+    QUERY=history
+    MAX_RECS=0
+    sru_url
+    echo "URL = $URL"
 
-    VERSION_REQUIRED_XML=${TMP_DIR}/srutest-version-required-$$.xml
-    add_tmp_file $VERSION_REQUIRED_XML
+#    URL=${SRU_HOST}'/sru?operation=searchRetrieve&query=history&startRecord=1&maximumRecords=0&recordSchema=marcxml'
 
-    if curl -s -S --write-out '<!-- http_code=%{http_code} -->' $URL > $VERSION_REQUIRED_XML
+    tmp_file=${TMP_DIR}/srutest-version-required-$$.xml
+    add_tmp_file $tmp_file
+
+    if ! curl -s -S --write-out '<!-- http_code=%{http_code} -->' $URL > $tmp_file
     then
-        if ! grep '<[a-zA-Z]*:diagnostics>' $VERSION_REQUIRED_XML >/dev/null
-        then
-            failure "missing version parameter should return a diagnotic"
-        elif ! grep 'Mandatory parameter not supplied' $VERSION_REQUIRED_XML >/dev/null
-	then 
-	    failure "missing version parameter should trigger diagnostic info:srw/diagnostic/1/7, 'Mandatory parameter not supplied'"
-        fi
-    else
         fatal "Failed to retrieve $URL"
+	return
+    fi
+
+    if ! grep '<[a-zA-Z]*:diagnostics>' $tmp_file >/dev/null
+    then
+        failure "missing version parameter should return a diagnotic"
+    elif ! grep 'Mandatory parameter not supplied' $tmp_file >/dev/null
+    then 
+	failure "missing version parameter should trigger diagnostic info:srw/diagnostic/1/7, 'Mandatory parameter not supplied'"
     fi
 }
 
@@ -237,16 +356,27 @@ test_version_missing () {
 # Check what happens when we ask for version=1.1
 #
 test_version_1_1 () {
-    URL=${SRU_HOST}'/sru?version=1.1&operation=searchRetrieve&query=history&maximumRecords=2&recordSchema=marcxml'
+    test_env_init
+    SRU_VERSION=1.1
+    QUERY=history
+    MAX_RECS=0
+    sru_url
+    echo "URL = $URL"
+    
+    tmp_file=${TMP_DIR}/srutest-version_1_1_$$.xml
+    add_tmp_file $tmp_file
 
-    VERSION_1_1_SCHEMA=xsd/srw/srw-types.xsd
-
-    VERSION_1_1_XML=${TMP_DIR}/srutest-version_1_1_$$.xml
-    add_tmp_file $VERSION_1_1_XML
-
-    if ! curl -s -S --write-out '<!-- http_code=%{http_code} -->' $URL > $VERSION_1_1_XML
+    if ! curl -s -S --write-out '<!-- http_code=%{http_code} -->' $URL > $tmp_file
     then
         fatal "Failed to retrieve $URL"
+	return
+    fi
+
+    local response_version="$(xsltproc xslt/get_sru_version.xslt $tmp_file)"
+    echo "Response version: $response_version"
+    if ! set_sru_schema "${response_version}"
+    then
+	failure "Unrecognized SRU version"
 	return
     fi
 
@@ -256,29 +386,39 @@ test_version_1_1 () {
     # for example, see:
     # http://z3950.loc.gov:7090/voyager?version=1.2&operation=searchRetrieve&query=dinosaur
 
-    if ! xmllint --schema $VERSION_1_1_SCHEMA $VERSION_1_1_XML
+    if ! xmllint --noout --schema ${SRU_SCHEMA} $tmp_file
     then
-	failure "search response failed to validate
-  URL=$URL"
+	failure "search response failed to validate"
 	return
     fi
 
 }
 
-
 #
-# Check what happens when we ask for version=1.1
+# Check what happens when we ask for version=1.2
 #
 test_version_1_2 () {
-    URL=${SRU_HOST}'/sru?version=1.2&operation=searchRetrieve&query=history&maximumRecords=2&recordSchema=marcxml'
+    test_env_init
+    SRU_VERSION=1.2
+    QUERY=history
+    MAX_RECS=0
+    sru_url
+    echo "URL = $URL"
 
-    local VERSION_1_2_SCHEMA=xsd/search-ws/sruResponse.xsd
-    local VERSION_1_2_XML=${TMP_DIR}/srutest-version_1_2_$$.xml
-    add_tmp_file $VERSION_1_2_XML
+    local tmp_file=${TMP_DIR}/srutest-version_1_2_$$.xml
+    add_tmp_file $tmp_file
 
-    if ! curl -s -S --write-out '<!-- http_code=%{http_code} -->' $URL > $VERSION_1_2_XML
+    if ! curl -s -S --write-out '<!-- http_code=%{http_code} -->' $URL > $tmp_file
     then
         fatal "Failed to retrieve $URL"
+	return
+    fi
+
+    local response_version="$(xsltproc xslt/get_sru_version.xslt $tmp_file)"
+    echo "Response version: $response_version"
+    if ! set_sru_schema "${response_version}"
+    then
+	failure "Unrecognized SRU version"
 	return
     fi
 
@@ -288,7 +428,7 @@ test_version_1_2 () {
     # for example, see:
     # http://z3950.loc.gov:7090/voyager?version=1.2&operation=searchRetrieve&query=dinosaur
 
-    if ! xmllint --schema $VERSION_1_2_SCHEMA $VERSION_1_2_XML
+    if ! xmllint --noout --schema ${SRU_SCHEMA} $tmp_file
     then
 	failure "search response failed to validate
   URL=$URL"
@@ -296,6 +436,55 @@ test_version_1_2 () {
     fi
 
 }
+
+#
+# Test CQL Level 0 compliance
+#
+STQ_COUNTER=${STQ_COUNTER:=0}
+test_cql_level_0_single_term_query () {
+    test_env_init
+    QUERY=$(rawurlencode "$q")
+    MAX_RECS=0
+    sru_url
+    echo "URL = $URL"
+
+    local tmp_file=${TMP_DIR}/cql_level_0_single_term_${STQ_COUNTER}_$$.xml
+    add_tmp_file $tmp_file
+
+    if ! curl -s -S --write-out '<!-- http_code=%{http_code} -->' $URL > $tmp_file
+    then
+        fatal "Failed to retrieve $URL"
+	return
+    fi
+
+    local response_version="$(xsltproc xslt/get_sru_version.xslt $tmp_file)"
+    echo "Response version: $response_version"
+    if ! set_sru_schema "${response_version}"
+    then
+	failure "Unrecognized SRU version"
+	return
+    fi
+
+    if ! xmllint --schema $SRU_SCHEMA $tmp_file
+    then
+	failure "search response failed to validate
+  URL=$URL"
+	return
+    fi
+
+    STQ_COUNTER=$((${STQ_COUNTER} + 1))
+    echo "STQ_COUNTER = $STQ_COUNTER"
+    
+ 
+
+    #
+    # TODO: check for diagnostic if version is not supported
+    #
+    # for example, see:
+    # http://z3950.loc.gov:7090/voyager?version=1.2&operation=searchRetrieve&query=dinosaur
+
+}
+
 
 
 # main
@@ -319,6 +508,18 @@ echo
 test_version_missing
 test_version_1_1
 test_version_1_2
+echo
+echo '### Testing CQL Level 0'
+echo
+single_term_query=(
+    'history'
+    '"death at hull house"'
+    '"death pirate"'
+)
+for q in "${single_term_query[@]}"
+do
+    test_cql_level_0_single_term_query "$q"
+done
 
 if [ $NUM_FAILED -gt 0 ]
 then
