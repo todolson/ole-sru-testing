@@ -478,6 +478,8 @@ test_cql_level_0_unsupported_query () {
     QUERY=$(rawurlencode "$q")
     MAX_RECS=0
     sru_url
+    echo "q = $q"
+    echo "QUERY = $QUERY"
     echo "URL = $URL"
 
     local tmp_file=${TMP_DIR}/cql_level_0_unsupported_${UNSUP_Q_COUNTER}_$$.xml
