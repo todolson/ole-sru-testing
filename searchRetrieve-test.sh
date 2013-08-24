@@ -459,20 +459,6 @@ test_cql_level_0_single_term_query () {
 	return
     fi
 
-    local response_version="$(xsltproc xslt/get_sru_version.xslt $tmp_file)"
-    echo "Response version: $response_version"
-    if ! set_sru_schema "${response_version}"
-    then
-	failure "Unrecognized SRU version"
-	return
-    fi
-
-  #   if ! xmllint --noout --schema $SRU_SCHEMA $tmp_file
-  #   then
-  # 	failure "search response failed to validate
-  # URL=$URL"
-  # 	return
-  #   fi
     # NOTE: must get this sequence right, otherwise can alter $? before
     # before saving xsltproc status
     local numRecs
