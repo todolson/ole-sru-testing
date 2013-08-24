@@ -442,6 +442,7 @@ test_version_1_2 () {
 #
 STQ_COUNTER=${STQ_COUNTER:=0}
 test_cql_level_0_single_term_query () {
+    local q="$1"
     test_env_init
     QUERY=$(rawurlencode "$q")
     MAX_RECS=0
@@ -450,6 +451,7 @@ test_cql_level_0_single_term_query () {
 
     local tmp_file=${TMP_DIR}/cql_level_0_single_term_${STQ_COUNTER}_$$.xml
     add_tmp_file $tmp_file
+    STQ_COUNTER=$((${STQ_COUNTER} + 1))
 
     if ! curl -s -S --write-out '<!-- http_code=%{http_code} -->' $URL > $tmp_file
     then
@@ -465,24 +467,22 @@ test_cql_level_0_single_term_query () {
 	return
     fi
 
-    if ! xmllint --schema $SRU_SCHEMA $tmp_file
+  #   if ! xmllint --noout --schema $SRU_SCHEMA $tmp_file
+  #   then
+  # 	failure "search response failed to validate
+  # URL=$URL"
+  # 	return
+  #   fi
+    # NOTE: must get this sequence right, otherwise can alter $? before
+    # before saving xsltproc status
+    local numRecs
+    local status
+    numRecs=$(xsltproc xslt/get_num_records.xslt $tmp_file)
+    status=$?
+    if [ $status -ne 0 ]
     then
-	failure "search response failed to validate
-  URL=$URL"
-	return
+	failure "Could not handle query: $q"
     fi
-
-    STQ_COUNTER=$((${STQ_COUNTER} + 1))
-    echo "STQ_COUNTER = $STQ_COUNTER"
-    
- 
-
-    #
-    # TODO: check for diagnostic if version is not supported
-    #
-    # for example, see:
-    # http://z3950.loc.gov:7090/voyager?version=1.2&operation=searchRetrieve&query=dinosaur
-
 }
 
 
@@ -513,12 +513,16 @@ echo '### Testing CQL Level 0'
 echo
 single_term_query=(
     'history'
-    '"death at hull house"'
-    '"death pirate"'
+    'pirate'
+    '"history"'
+    '"death at the fair"'
+    '"death fair"'
+    '"\"death\" fair"'
+    '"death mcnamara"'
 )
-for q in "${single_term_query[@]}"
+for Q in "${single_term_query[@]}"
 do
-    test_cql_level_0_single_term_query "$q"
+    test_cql_level_0_single_term_query "$Q"
 done
 
 if [ $NUM_FAILED -gt 0 ]
