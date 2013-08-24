@@ -471,6 +471,37 @@ test_cql_level_0_single_term_query () {
     fi
 }
 
+UNSUP_Q_COUNTER=${UNSUP_Q_COUNTER:=0}
+test_cql_level_0_unsupported_query () {
+    local q="$1"
+    test_env_init
+    QUERY=$(rawurlencode "$q")
+    MAX_RECS=0
+    sru_url
+    echo "URL = $URL"
+
+    local tmp_file=${TMP_DIR}/cql_level_0_unsupported_${UNSUP_Q_COUNTER}_$$.xml
+    add_tmp_file $tmp_file
+    UNSUP_Q_COUNTER=$((${UNSUP_Q_COUNTER} + 1))
+
+    if ! curl -s -S --write-out '<!-- http_code=%{http_code} -->' $URL > $tmp_file
+    then
+        fatal "Failed to retrieve $URL"
+	return
+    fi
+
+    # NOTE: must get this sequence right, otherwise can alter $? before
+    # before saving xsltproc status
+    local numRecs
+    local status
+    numRecs=$(xsltproc xslt/get_num_records.xslt $tmp_file)
+    status=$?
+    if [ $status -ne 10 ]
+    then
+	failure "Query should have generated a message: $q"
+    fi
+}
+
 
 
 # main
@@ -509,6 +540,15 @@ single_term_query=(
 for Q in "${single_term_query[@]}"
 do
     test_cql_level_0_single_term_query "$Q"
+done
+unsupported_query=(
+    '"death \"mcnamara"'
+    '"death pirate" prox/unit=word'
+    'dc.title any death prox/unit=word/distance>3 dc.title any pirate'
+)
+for Q in "${unsupported_query[@]}"
+do
+    test_cql_level_0_unsupported_query "$Q"
 done
 
 if [ $NUM_FAILED -gt 0 ]
