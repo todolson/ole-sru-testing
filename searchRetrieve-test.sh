@@ -504,6 +504,100 @@ test_cql_level_0_unsupported_query () {
     fi
 }
 
+#
+# Generic search test expecting success
+#
+test_search_success () {
+    return
+}
+
+
+LOCAL_ID_COUNTER=${LOCAL_ID_COUNTER:=0}
+test_localId_success () {
+    local localId="$1"
+    local title="$2"
+    local q="localId=${localId}"
+
+    test_env_init
+    QUERY=$(rawurlencode "$q")
+    sru_url
+    echo "q = $q"
+    echo "QUERY = $QUERY"
+    echo "URL = $URL"
+
+    local tmp_file=${TMP_DIR}/local_id_${LOCAL_ID_COUNTER}_$$.xml
+    add_tmp_file $tmp_file
+    LOCAL_ID_COUNTER=$((${LOCAL_ID_COUNTER} + 1))
+
+    if ! curl -s -S --write-out '<!-- http_code=%{http_code} -->' $URL > $tmp_file
+    then
+        fatal "Failed to retrieve $URL"
+	return
+    fi
+
+    # NOTE: must get this sequence right, otherwise can alter $? before
+    # before saving xsltproc status
+    local numRecs
+    local status
+    numRecs=$(xsltproc xslt/get_num_records.xslt $tmp_file)
+    status=$?
+    if [ $status -ne 0 ]
+    then
+	failure "Could not handle query: $q"
+    elif [ $numRecs -eq 0 ]
+    then
+	failure "no matches for query $q"
+    elif [ $numRecs -gt 1 ]
+    then
+	failure "$numRecs matches, expected 1 for query $q"
+    else
+	local ret001=$(xsltproc xslt/get_001.xslt $tmp_file)
+	if [ $ret001 != $localId ]
+	then
+	    failure "Returned record does not match requested record: $ret001 != $localId"
+	fi
+    fi
+
+}
+
+#
+# Test local Id queries that should fail
+#
+test_localId_fail () {
+    local localId="$1"
+    local q="localId=${localId}"
+
+    test_env_init
+    QUERY=$(rawurlencode "$q")
+    sru_url
+    echo "q = $q"
+    echo "QUERY = $QUERY"
+    echo "URL = $URL"
+
+    local tmp_file=${TMP_DIR}/local_id_${LOCAL_ID_COUNTER}_$$.xml
+    add_tmp_file $tmp_file
+    UNSUP_Q_COUNTER=$((${LOCAL_ID_COUNTER} + 1))
+
+    if ! curl -s -S --write-out '<!-- http_code=%{http_code} -->' $URL > $tmp_file
+    then
+        fatal "Failed to retrieve $URL"
+	return
+    fi
+
+    # NOTE: must get this sequence right, otherwise can alter $? before
+    # before saving xsltproc status
+    local numRecs
+    local status
+    numRecs=$(xsltproc xslt/get_num_records.xslt $tmp_file)
+    status=$?
+    if [ $status -ne 0 ]
+    then
+	failure "Could not parse response for query: $q"
+    elif [ -n "$numRecs" && $numRecs != 0 ]
+    then
+	failure "expected no results for query $q, found $numRecs matches"
+    fi
+}
 
 
 # main
@@ -552,6 +646,19 @@ for Q in "${unsupported_query[@]}"
 do
     test_cql_level_0_unsupported_query "$Q"
 done
+echo
+echo '### Testing search by localId'
+echo
+test_localId_success '121' 'Death of a pirate :'
+test_localId_success '16' 'PIRATE HUNTING : THE FIGHT AGAINST PIRATES, PRIVATEERS, AND SEA RAIDERS FROM ANTIQUITY TO THE PRESENT'
+test_localId_success '114' 'The cultures of Maimonideanism :'
+test_localId_success '109' 'Death at the fair /'
+test_localId_success 'wbm-123' 'Cornelii Jansenii Episcopi gandavensis Paraphrasis in omnes Psalmos Davidicos, cum argumentis et annotationibus :'
+test_localId_fail '11234124312431214243'
+test_localId_fail '112-12'
+test_localId_fail '11*12'
+test_localId_fail '123'
+
 
 if [ $NUM_FAILED -gt 0 ]
 then
