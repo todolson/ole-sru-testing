@@ -438,6 +438,78 @@ test_version_1_2 () {
 }
 
 #
+# Check for schema conformance
+# Takes different arguments, checks both response container and recordData contents
+#
+SCHEMA_CONFORMANCE_COUNTER=${SCHEMA_CONFORMANCE_COUNTER:=0}
+test_schema_conformance() {
+    local q="$1"
+    local record_schema="$2"
+
+    test_env_init
+    QUERY=$(rawurlencode "$q")
+    RECORD_SCHEMA=${record_schema}
+    sru_url
+    echo "query: $q; in record schema $RECORD_SCHEMA"
+    echo "URL = $URL"
+    
+    tmp_file=${TMP_DIR}/schema_conformance_${SCHEMA_CONFORMANCE_COUNTER}_$$.xml
+    #add_tmp_file $tmp_file
+    SCHEMA_CONFORMANCE_COUNTER=$((${SCHEMA_CONFORMANCE_COUNTER} + 1))
+
+    if ! curl -s -S --write-out '<!-- http_code=%{http_code} -->' $URL > $tmp_file
+    then
+        fatal "Failed to retrieve $URL"
+	return
+    fi
+    local response_version="$(xsltproc xslt/get_sru_version.xslt $tmp_file)"
+    echo "Response version: $response_version"
+    if ! set_sru_schema "${response_version}"
+    then
+	failure "Unrecognized SRU version"
+	return
+    fi
+
+    # xmllint only takes one schema argument at a time (last --schema wins),
+    # so must take this apart by steps
+
+    if ! xmllint --noout --schema ${SRU_SCHEMA} $tmp_file
+    then
+	failure "Error validating SRU response"
+	return
+    fi
+
+    local tmp_file_record_data="$(dirname $tmp_file)/$(basename -s .xml $tmp_file)_record_data.xml"
+    local status
+    xsltproc xslt/get_record_data.xslt $tmp_file > $tmp_file_record_data
+    status=$?
+    #add_tmp_file $tmp_file_record_data
+    echo $tmp_file_record_data
+    if [ $status -eq 10 ]
+    then
+	failure "XSLT fatal message"
+	cat $tmp_file_record_data
+	return
+    fi
+    
+    local record_schema_xsd=""
+    case "$record_schema" in
+	OPAC)
+	    record_schema_xsd=xsd/opacxml.xsd;;
+	marcxml)
+	    record_schema_xsd=xsd/MARC21slim.xsd;;
+	*)
+	    dryrot "unknown record schema: $record_schema";;
+    esac
+    if ! xmllint --noout --schema ${record_schema_xsd} $tmp_file_record_data
+    then
+	failure "Error validating record data in SRU response: ${record_schema}"
+    fi
+    
+}
+
+
+#
 # Test CQL Level 0 compliance
 #
 STQ_COUNTER=${STQ_COUNTER:=0}
@@ -621,6 +693,11 @@ echo
 test_version_missing
 test_version_1_1
 test_version_1_2
+echo
+echo '### Testing schema conformance'
+echo
+test_schema_conformance 'localId=16' marcxml
+test_schema_conformance 'localId=16' OPAC
 echo
 echo '### Testing CQL Level 0'
 echo
