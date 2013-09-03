@@ -332,8 +332,6 @@ test_version_missing () {
     sru_url
     echo "URL = $URL"
 
-#    URL=${SRU_HOST}'/sru?operation=searchRetrieve&query=history&startRecord=1&maximumRecords=0&recordSchema=marcxml'
-
     tmp_file=${TMP_DIR}/srutest-version-required-$$.xml
     add_tmp_file $tmp_file
 
@@ -343,12 +341,68 @@ test_version_missing () {
 	return
     fi
 
-    if ! grep '<[a-zA-Z]*:diagnostics>' $tmp_file >/dev/null
+    #
+    # validate according to reported version
+    #
+    local response_version="$(xsltproc xslt/get_sru_version.xslt $tmp_file)"
+    echo "Response version: $response_version"
+    if ! set_sru_schema "${response_version}"
     then
-        failure "missing version parameter should return a diagnotic"
-    elif ! grep 'Mandatory parameter not supplied' $tmp_file >/dev/null
-    then 
-	failure "missing version parameter should trigger diagnostic info:srw/diagnostic/1/7, 'Mandatory parameter not supplied'"
+	failure "Unrecognized SRU version"
+	return
+    fi
+    if ! xmllint --noout --schema ${SRU_SCHEMA} $tmp_file
+    then
+	failure "search response failed to validate"
+	return
+    fi
+
+    #
+    # Check content errors:
+    #
+
+    local -a content_errors
+
+    #
+    # Fatal diagnostic requires number of results = 0
+    #
+    local numRecs
+    numRecs=$(xsltproc xslt/get_num_records.xslt $tmp_file)
+    status=$?
+    if [ $status -ne 0 ]
+    then
+	failure "Could not get number of records, check URL response content"
+    elif [ $numRecs -ne 0 ]
+    then
+	content_errors[0]="Fatal diagnostic: numberOfRecords should be 0, but was $numRecs"
+    fi
+    #
+    # Check diagnostic content
+    #
+    local diag_uri='info:srw/diagnostic/1/7'
+    local diag_details='version'
+    local diag_message='Mandatory parameter is missing'
+    #
+    # Leverage format of output text to set local variables
+    #
+    . <(xsltproc xslt/get_diagnostic_as_test.xslt $tmp_file |  sed -n '/^[A-Z_a-z]*=/s/^/local my_/p')
+    
+    if [ "$my_uri" != "$diag_uri"]
+    then
+	content_errors[1]="Diagnostic uri: expected '$diag_uri'"
+    fi
+    if [ "$my_details" != "$diag_details"]
+    then
+	content_errors[2]="Diagnostic details: expected '$diag_details'"
+    fi
+    if [ "$my_message" != "$diag_message"]
+    then
+	content_errors[3]="Diagnostic message: expected '$diag_message'"
+    fi
+    if [ ${#content_errors[@]} -ne 0 ]
+    then
+	local msg=$(printf "%s\n" "Content problems:" ${content_errors[*]})
+	failure "$msg"
     fi
 }
 
@@ -665,7 +719,7 @@ test_localId_fail () {
     if [ $status -ne 0 ]
     then
 	failure "Could not parse response for query: $q"
-    elif [ -n "$numRecs" && $numRecs != 0 ]
+    elif [ -n "$numRecs" && "$numRecs" != 0 ]
     then
 	failure "expected no results for query $q, found $numRecs matches"
     fi

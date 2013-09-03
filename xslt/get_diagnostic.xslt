@@ -11,14 +11,8 @@
     </xsl:copy>
   </xsl:template>
   
-  <xsl:template match="*[local-name()='recordData'][1]">
-    <!-- only copy children, not recordData node -->
-    <xsl:apply-templates select="*" mode="identity"/>
-  </xsl:template>
-  
   <xsl:template match="*[local-name()='diagnostics']">
-    <xsl:apply-templates select="@*|node()"/>
-    <xsl:message terminate="yes">Terminating XSLT processing</xsl:message>
+    <xsl:apply-templates select="@*|node()" mode="identity"/>
   </xsl:template>
   
   <xsl:template match="*[local-name()='diagnostic']">
