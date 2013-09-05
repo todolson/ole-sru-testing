@@ -564,6 +564,49 @@ test_schema_conformance() {
 
 
 #
+# Check for OPAC contents
+#
+OPAC_COUNTER=${OPAC_COUNTER:=0}
+test_opac_barcode() {
+    local q="$1"
+    local barcode_expected="$2"
+
+    test_env_init
+    QUERY=$(rawurlencode "$q")
+    sru_url
+    echo "query: $q"
+    echo "URL = $URL"
+    
+    tmp_file=${TMP_DIR}/opac_barcode_${OPAC_COUNTER}_$$.xml
+    #add_tmp_file $tmp_file
+    OPAC_COUNTER=$((${OPAC_COUNTER} + 1))
+
+    if ! curl -s -S --write-out '<!-- http_code=%{http_code} -->' $URL > $tmp_file
+    then
+        fatal "Failed to retrieve $URL"
+	return
+    fi
+    local response_version="$(xsltproc xslt/get_sru_version.xslt $tmp_file)"
+    echo "Response version: $response_version"
+    if ! set_sru_schema "${response_version}"
+    then
+	failure "Unrecognized SRU version"
+	return
+    fi
+
+    local barcode_returned
+    barcode_returned=$(xsltproc xslt/get_barcode.xslt $tmp_file)
+    if [ -z "$barcode_returned" ]
+    then
+	failure "Barcode not found in query $q"
+    elif [ "$barcode_returned" != "$barcode_expected"]
+    then
+	failure "Barcode returned != Barcode expected: $barcode_returned != $barcode_expected"
+    fi
+}
+
+
+#
 # Test CQL Level 0 compliance
 #
 STQ_COUNTER=${STQ_COUNTER:=0}
@@ -571,7 +614,7 @@ test_cql_level_0_single_term_query () {
     local q="$1"
     test_env_init
     QUERY=$(rawurlencode "$q")
-    MAX_RECS=0
+    #MAX_RECS=0
     sru_url
     echo "URL = $URL"
 
@@ -752,6 +795,10 @@ echo '### Testing schema conformance'
 echo
 test_schema_conformance 'localId=16' marcxml
 test_schema_conformance 'localId=16' OPAC
+echo
+echo '### Testing OPAC contents'
+echo
+test_opac_barcode 'localId=wbm-121' 'mq6641488'
 echo
 echo '### Testing CQL Level 0'
 echo
