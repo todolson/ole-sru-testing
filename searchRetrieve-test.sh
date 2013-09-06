@@ -345,7 +345,13 @@ test_version_missing () {
     # validate according to reported version
     #
     local response_version="$(xsltproc xslt/get_sru_version.xslt $tmp_file)"
-    echo "Response version: $response_version"
+    if [ -z "$response_version" ]
+    then
+	failure "Missing version parameter: version not set in SRU response"
+	return
+    else
+	echo "Response version: $response_version"
+    fi
     if ! set_sru_schema "${response_version}"
     then
 	failure "Unrecognized SRU version"
