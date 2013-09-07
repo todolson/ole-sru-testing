@@ -181,12 +181,18 @@ fi
 # echo the schema file to use for validation
 #
 get_sru_schema() {
-    local sru_version=""
-    case "$1" in
-	"1.1" )
+    local file="$1"
+
+    local sru_schema=""
+    local namespace=$(xsltproc xslt/get_root_namespace.xslt "$file")
+    case "$namespace" in
+	"http://www.loc.gov/zing/srw/" )
 	    sru_schema="$SRU_1_1_SCHEMA";;
-	"1.2" )
+	"http://docs.oasis-open.org/ns/search-ws/sruResponse" )
 	    sru_schema="$SRU_1_2_SCHEMA";;
+	*)
+	    warning "unrecognized namespace URI: $namespace"
+	    return 1;;
     esac
     echo ${sru_schema}
 }
@@ -195,16 +201,19 @@ get_sru_schema() {
 # set $SRU_SCHEMA the schema file to use for validation
 #
 set_sru_schema() {
-    case "$1" in
-	"1.1" )
+    local file="$1"
+    local namespace=$(xsltproc xslt/get_root_namespace.xslt "$file")
+    echo $namespace
+    case "$namespace" in
+	'http://www.loc.gov/zing/srw/' )
+	    echo SRU 1.1
 	    SRU_SCHEMA="$SRU_1_1_SCHEMA";;
-	"1.2" )
+	'http://docs.oasis-open.org/ns/search-ws/sruResponse' )
 	    SRU_SCHEMA="$SRU_1_2_SCHEMA";;
 	*)
-	    SRU_SCHEMA=""
+	    warning "unrecognized namespace URI: $namespace"
 	    return 1;;
     esac
-    return 0
 }
 
 #
@@ -342,17 +351,9 @@ test_version_missing () {
     fi
 
     #
-    # validate according to reported version
+    # validate according to schema
     #
-    local response_version="$(xsltproc xslt/get_sru_version.xslt $tmp_file)"
-    if [ -z "$response_version" ]
-    then
-	failure "Missing version parameter: version not set in SRU response"
-	return
-    else
-	echo "Response version: $response_version"
-    fi
-    if ! set_sru_schema "${response_version}"
+    if ! set_sru_schema "${tmp_file}"
     then
 	failure "Unrecognized SRU version"
 	return
@@ -434,7 +435,7 @@ test_version_1_1 () {
 
     local response_version="$(xsltproc xslt/get_sru_version.xslt $tmp_file)"
     echo "Response version: $response_version"
-    if ! set_sru_schema "${response_version}"
+    if ! set_sru_schema "$tmp_file"
     then
 	failure "Unrecognized SRU version"
 	return
@@ -476,7 +477,7 @@ test_version_1_2 () {
 
     local response_version="$(xsltproc xslt/get_sru_version.xslt $tmp_file)"
     echo "Response version: $response_version"
-    if ! set_sru_schema "${response_version}"
+    if ! set_sru_schema "${tmp_file}"
     then
 	failure "Unrecognized SRU version"
 	return
@@ -510,7 +511,7 @@ test_schema_conformance() {
     QUERY=$(rawurlencode "$q")
     RECORD_SCHEMA=${record_schema}
     sru_url
-    echo "query: $q; in record schema $RECORD_SCHEMA"
+    echo "query '$q' in record schema $RECORD_SCHEMA"
     echo "URL = $URL"
     
     tmp_file=${TMP_DIR}/schema_conformance_${SCHEMA_CONFORMANCE_COUNTER}_$$.xml
@@ -524,7 +525,7 @@ test_schema_conformance() {
     fi
     local response_version="$(xsltproc xslt/get_sru_version.xslt $tmp_file)"
     echo "Response version: $response_version"
-    if ! set_sru_schema "${response_version}"
+    if ! set_sru_schema "${tmp_file}"
     then
 	failure "Unrecognized SRU version"
 	return
@@ -594,7 +595,7 @@ test_opac_barcode() {
     fi
     local response_version="$(xsltproc xslt/get_sru_version.xslt $tmp_file)"
     echo "Response version: $response_version"
-    if ! set_sru_schema "${response_version}"
+    if ! set_sru_schema "${tmp_file}"
     then
 	failure "Unrecognized SRU version"
 	return
