@@ -5,7 +5,16 @@
     <xsl:apply-templates select="@*|node()"/>
   </xsl:template>
   
+  <xsl:template match="/*[local-name()='searchRetrieveResponse']">
+    <xsl:if test="not(*[local-name()='version'])">
+      <xsl:message terminate="yes">
+        <xsl:text>ERROR: &lt;version&gt; expected but not found</xsl:text>
+      </xsl:message>
+    </xsl:if>
+    <xsl:apply-templates/>
+  </xsl:template>
+  
   <xsl:template match="*[local-name()='version']">
-    <xsl:value-of select="text()"/>
+    <xsl:copy-of select="text()"/>
   </xsl:template>
 </xsl:stylesheet>

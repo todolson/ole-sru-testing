@@ -19,7 +19,8 @@ SRU_VERSION_DFLT=1.1
 #SRU_VERSION_DFLT=1.2
 
 SRU_1_1_SCHEMA=xsd/srw/srw-types.xsd
-SRU_1_2_SCHEMA=xsd/search-ws/sruResponse.xsd
+SRU_1_2_SCHEMA=xsd/srw/srw-types.xsd
+SRU_2_0_SCHEMA=xsd/search-ws/sruResponse.xsd
 
 TMP_DIR=${TMP_DIR:-/tmp}
 # END CONFIGURE
@@ -202,16 +203,23 @@ get_sru_schema() {
 #
 set_sru_schema() {
     local file="$1"
-    local namespace=$(xsltproc xslt/get_root_namespace.xslt "$file")
-    echo $namespace
-    case "$namespace" in
-	'http://www.loc.gov/zing/srw/' )
-	    echo SRU 1.1
+    local version
+    version=$(xsltproc xslt/get_sru_version.xslt "$file")
+    status=$?
+    if [ "$status" -ne 0 ]
+    then
+	warning "xsltproc failed with status $status"
+	return $status
+    fi
+    case "$version" in
+	'1.1' )
 	    SRU_SCHEMA="$SRU_1_1_SCHEMA";;
-	'http://docs.oasis-open.org/ns/search-ws/sruResponse' )
+	'1.2' )
 	    SRU_SCHEMA="$SRU_1_2_SCHEMA";;
+	'2.0' )
+	    SRU_SCHEMA="$SRU_2_0_SCHEMA";;
 	*)
-	    warning "unrecognized namespace URI: $namespace"
+	    warning "unrecognized SRU version: $version"
 	    return 1;;
     esac
 }
@@ -287,7 +295,11 @@ test_startRecord_0 () {
 
     if curl -s -S --write-out '<!-- http_code=%{http_code} -->' $URL > $tmp_file
     then
-        if grep '<[a-zA-Z]*:numberOfRecords>' $tmp_file >/dev/null
+	local status
+	xsltproc --param fatal 'true()' xslt/get_diagnostic_as_text.xslt $tmp_file
+	status=$?
+	echo "status=$status"
+        if [ $status == 10 ]
         then
             failure "startRecord = 0 should return a diagnotic"
         else
@@ -302,16 +314,21 @@ test_startRecord_0 () {
 # Test that startRecord = 1 really gets the first record
 # Use a query that should return one record startRecord = 1
 #
+# Params:
+#     $1 = query to execute
+#
+# NOTE: expect queries to return exactly 1 result for testing
+#
 # DANGER: depends on set of test records
 #
 
 test_startRecord_1 () {
+    local q="$1"
     test_env_init
-    # query for record wbm-13 (001 in general keyword) should have
-    # exactly 1 result
-    QUERY=wbm-13
+    QUERY=$(rawurlencode "$q")
     START_REC=1
     sru_url
+    echo "query: $q"
     echo "URL = $URL"
 
     local tmp_file=${TMP_DIR}/srutest-startRecord_1_$$.xml
@@ -319,9 +336,13 @@ test_startRecord_1 () {
 
     if curl -s -S --write-out '<!-- http_code=%{http_code} -->' $URL > $tmp_file
     then
-        if grep '<diagnostic>' $tmp_file >/dev/null
+	local status
+	xsltproc xslt/get_diagnostic_as_text.xslt $tmp_file
+	status=$?
+	echo "status=$status"
+        if [ "$status" -ne 0 ]
         then
-            failure "startRecord = 1 does not return first record; diagnostic: " $(sed -n -e '/<diagnostic>/,/<\/diagnostic>/p' $tmp_file)
+            failure "startRecord=1 does not return first record"
         else
             return
         fi
@@ -392,7 +413,7 @@ test_version_missing () {
     #
     # Leverage format of output text to set local variables
     #
-    . <(xsltproc xslt/get_diagnostic_as_test.xslt $tmp_file |  sed -n '/^[A-Z_a-z]*=/s/^/local my_/p')
+    . <(xsltproc xslt/get_diagnostic_as_text.xslt $tmp_file |  sed -n '/^[A-Z_a-z]*=/s/^/local my_/p')
     
     if [ "$my_uri" != "$diag_uri"]
     then
@@ -790,7 +811,7 @@ echo
 echo '### Testing SRU parameter startRecord'
 echo
 test_startRecord_0
-test_startRecord_1
+test_startRecord_1 'isbn any 9781439206188'
 echo
 echo '### Testing SRU parameter version'
 echo
@@ -800,8 +821,8 @@ test_version_1_2
 echo
 echo '### Testing schema conformance'
 echo
-test_schema_conformance 'localId=16' marcxml
-test_schema_conformance 'localId=16' OPAC
+test_schema_conformance 'title any pirate' marcxml
+test_schema_conformance 'pirate' OPAC
 echo
 echo '### Testing OPAC contents'
 echo
