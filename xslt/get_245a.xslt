@@ -8,7 +8,7 @@
   </xsl:template>
   
   <xsl:template match="m:datafield[@tag='245']/m:subfield[@code='a']">
-    <xsl:value-of select="text()"/>
+    <xsl:value-of select="concat(text(), '&#x0A;')"/>
   </xsl:template>
   
 </xsl:stylesheet>

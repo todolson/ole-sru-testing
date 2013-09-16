@@ -15,8 +15,8 @@ AUTHOR="Tod Olson"
 SRU_HOST=${SRU_HOST:-http://tst.docstore.ole.kuali.org}
 SRU_BASE="${SRU_HOST}/sru"
 echo "TEMPORARY hack: use SRU 1.1 until development switched namespaces - TAO 2013-08-23"
-SRU_VERSION_DFLT=1.1
-#SRU_VERSION_DFLT=1.2
+#SRU_VERSION_DFLT=1.1
+SRU_VERSION_DFLT=1.2
 
 SRU_1_1_SCHEMA=xsd/srw/srw-types.xsd
 SRU_1_2_SCHEMA=xsd/srw/srw-types.xsd
@@ -29,7 +29,7 @@ USAGE="Usage: $ME [-t] ; -H for help"
 HELP="This is $ME $VERSION by $AUTHOR <$WWW>
 
  -T test mode (developer only)"
-TAB="$(echo -n x | tr x '\011')"
+TAB="$(printf '\t')"
 
 TESTING=false
 
@@ -215,7 +215,9 @@ set_sru_schema() {
 	'1.1' )
 	    SRU_SCHEMA="$SRU_1_1_SCHEMA";;
 	'1.2' )
-	    SRU_SCHEMA="$SRU_1_2_SCHEMA";;
+	    # SRU_SCHEMA="$SRU_1_2_SCHEMA";;
+	    # Temporary hack
+	    SRU_SCHEMA="$SRU_2_0_SCHEMA";;
 	'2.0' )
 	    SRU_SCHEMA="$SRU_2_0_SCHEMA";;
 	*)
@@ -258,6 +260,14 @@ rawurlencode() {
 
 declare -a tmp_files
 
+# Build a temp file name
+declare -i TMP_FILE_COUNTER=0
+tmp_file_name () {
+    echo "${TMP_DIR}/$1_$$_${TMP_FILE_COUNTER}.xml"
+    # $((TMP_FILE_COUNTER += 1))
+    let TMP_FILE_COUNTER=$TMP_FILE_COUNTER+1
+}
+
 # Register a temp file for deletion when script ends
 add_tmp_file () {
     tmp_files[${#tmp_files[@]}]=$1
@@ -290,7 +300,7 @@ test_startRecord_0 () {
     sru_url
     echo "URL = $URL"
     
-    local tmp_file=${TMP_DIR}/srutest-startRecord_0_$$.xml
+    local tmp_file=$(tmp_file_name startRecord_0)
     add_tmp_file $tmp_file
 
     if curl -s -S --write-out '<!-- http_code=%{http_code} -->' $URL > $tmp_file
@@ -331,7 +341,7 @@ test_startRecord_1 () {
     echo "query: $q"
     echo "URL = $URL"
 
-    local tmp_file=${TMP_DIR}/srutest-startRecord_1_$$.xml
+    local tmp_file=$(tmp_file_name startRecord_1)
     add_tmp_file $tmp_file
 
     if curl -s -S --write-out '<!-- http_code=%{http_code} -->' $URL > $tmp_file
@@ -362,7 +372,7 @@ test_version_missing () {
     sru_url
     echo "URL = $URL"
 
-    tmp_file=${TMP_DIR}/srutest-version-required-$$.xml
+    local tmp_file=$(tmp_file_name version_required)
     add_tmp_file $tmp_file
 
     if ! curl -s -S --write-out '<!-- http_code=%{http_code} -->' $URL > $tmp_file
@@ -445,7 +455,7 @@ test_version_1_1 () {
     sru_url
     echo "URL = $URL"
     
-    tmp_file=${TMP_DIR}/srutest-version_1_1_$$.xml
+    local tmp_file=$(tmp_file_name version_1_1)
     add_tmp_file $tmp_file
 
     if ! curl -s -S --write-out '<!-- http_code=%{http_code} -->' $URL > $tmp_file
@@ -487,7 +497,7 @@ test_version_1_2 () {
     sru_url
     echo "URL = $URL"
 
-    local tmp_file=${TMP_DIR}/srutest-version_1_2_$$.xml
+    local tmp_file=$(tmp_file_name version_1_2)
     add_tmp_file $tmp_file
 
     if ! curl -s -S --write-out '<!-- http_code=%{http_code} -->' $URL > $tmp_file
@@ -523,7 +533,6 @@ test_version_1_2 () {
 # Check for schema conformance
 # Takes different arguments, checks both response container and recordData contents
 #
-SCHEMA_CONFORMANCE_COUNTER=${SCHEMA_CONFORMANCE_COUNTER:=0}
 test_schema_conformance() {
     local q="$1"
     local record_schema="$2"
@@ -535,9 +544,8 @@ test_schema_conformance() {
     echo "query '$q' in record schema $RECORD_SCHEMA"
     echo "URL = $URL"
     
-    tmp_file=${TMP_DIR}/schema_conformance_${SCHEMA_CONFORMANCE_COUNTER}_$$.xml
-    #add_tmp_file $tmp_file
-    SCHEMA_CONFORMANCE_COUNTER=$((${SCHEMA_CONFORMANCE_COUNTER} + 1))
+    local tmp_file=$(tmp_file_name schema_conformance)
+    add_tmp_file $tmp_file
 
     if ! curl -s -S --write-out '<!-- http_code=%{http_code} -->' $URL > $tmp_file
     then
@@ -561,11 +569,11 @@ test_schema_conformance() {
 	return
     fi
 
-    local tmp_file_record_data="$(dirname $tmp_file)/$(basename -s .xml $tmp_file)_record_data.xml"
+    local tmp_file_record_data=$(tmp_file_name schema_conformance_record_data)
     local status
     xsltproc xslt/get_record_data.xslt $tmp_file > $tmp_file_record_data
     status=$?
-    #add_tmp_file $tmp_file_record_data
+    add_tmp_file $tmp_file_record_data
     echo $tmp_file_record_data
     if [ $status -eq 10 ]
     then
@@ -594,7 +602,6 @@ test_schema_conformance() {
 #
 # Check for OPAC contents
 #
-OPAC_COUNTER=${OPAC_COUNTER:=0}
 test_opac_barcode() {
     local q="$1"
     local barcode_expected="$2"
@@ -605,9 +612,8 @@ test_opac_barcode() {
     echo "query: $q"
     echo "URL = $URL"
     
-    tmp_file=${TMP_DIR}/opac_barcode_${OPAC_COUNTER}_$$.xml
-    #add_tmp_file $tmp_file
-    OPAC_COUNTER=$((${OPAC_COUNTER} + 1))
+    local tmp_file=$(tmp_file_name opac_barcode)
+    add_tmp_file $tmp_file
 
     if ! curl -s -S --write-out '<!-- http_code=%{http_code} -->' $URL > $tmp_file
     then
@@ -637,7 +643,6 @@ test_opac_barcode() {
 #
 # Test CQL Level 0 compliance
 #
-STQ_COUNTER=${STQ_COUNTER:=0}
 test_cql_level_0_single_term_query () {
     local q="$1"
     test_env_init
@@ -646,9 +651,8 @@ test_cql_level_0_single_term_query () {
     sru_url
     echo "URL = $URL"
 
-    local tmp_file=${TMP_DIR}/cql_level_0_single_term_${STQ_COUNTER}_$$.xml
+    local tmp_file=$(tmp_file_name cql_level_0_single_term)
     add_tmp_file $tmp_file
-    STQ_COUNTER=$((${STQ_COUNTER} + 1))
 
     if ! curl -s -S --write-out '<!-- http_code=%{http_code} -->' $URL > $tmp_file
     then
@@ -668,7 +672,6 @@ test_cql_level_0_single_term_query () {
     fi
 }
 
-UNSUP_Q_COUNTER=${UNSUP_Q_COUNTER:=0}
 test_cql_level_0_unsupported_query () {
     local q="$1"
     test_env_init
@@ -679,9 +682,8 @@ test_cql_level_0_unsupported_query () {
     echo "QUERY = $QUERY"
     echo "URL = $URL"
 
-    local tmp_file=${TMP_DIR}/cql_level_0_unsupported_${UNSUP_Q_COUNTER}_$$.xml
+    local tmp_file=$(tmp_file_name cql_level_0_unsupported)
     add_tmp_file $tmp_file
-    UNSUP_Q_COUNTER=$((${UNSUP_Q_COUNTER} + 1))
 
     if ! curl -s -S --write-out '<!-- http_code=%{http_code} -->' $URL > $tmp_file
     then
@@ -709,7 +711,6 @@ test_search_success () {
 }
 
 
-LOCAL_ID_COUNTER=${LOCAL_ID_COUNTER:=0}
 test_localId_success () {
     local localId="$1"
     local title="$2"
@@ -719,12 +720,11 @@ test_localId_success () {
     QUERY=$(rawurlencode "$q")
     sru_url
     echo "q = $q"
-    echo "QUERY = $QUERY"
+    #echo "QUERY = $QUERY"
     echo "URL = $URL"
 
-    local tmp_file=${TMP_DIR}/local_id_${LOCAL_ID_COUNTER}_$$.xml
+    local tmp_file=$(tmp_file_name local_id)
     add_tmp_file $tmp_file
-    LOCAL_ID_COUNTER=$((${LOCAL_ID_COUNTER} + 1))
 
     if ! curl -s -S --write-out '<!-- http_code=%{http_code} -->' $URL > $tmp_file
     then
@@ -749,12 +749,43 @@ test_localId_success () {
 	failure "$numRecs matches, expected 1 for query $q"
     else
 	local ret001=$(xsltproc xslt/get_001.xslt $tmp_file)
-	if [ $ret001 != $localId ]
+	local ret245a=$(xsltproc xslt/get_245a.xslt $tmp_file)
+
+	if [ "$ret001" != "$localId" ]
 	then
 	    failure "Returned record does not match requested record: $ret001 != $localId"
+	elif [ "$ret245a" != "$title" ]
+	then
+	    failure "Wrong title returned for id=$localId: returned '$ret245a'"
 	fi
     fi
 
+}
+
+test_localId_success_wrapper () {
+    test_env_init
+    QUERY=$(rawurlencode "$1")
+    sru_url
+    echo "Grabbing results to get existing bib IDs..."
+    echo "q = $1"
+    echo "QUERY = $QUERY"
+    echo "URL = $URL"
+
+    local tmp_file=$(tmp_file_name local_id)
+    add_tmp_file $tmp_file
+
+    if ! curl -s -S --write-out '<!-- http_code=%{http_code} -->' $URL > $tmp_file
+    then
+        fatal "Failed to retrieve $URL"
+	return
+    fi
+
+    local id title
+    xsltproc xslt/get_id_and_title.xslt $tmp_file |
+    while IFS="${TAB}" read id title
+    do
+	test_localId_success "$id" "$title"
+    done
 }
 
 #
@@ -771,9 +802,8 @@ test_localId_fail () {
     echo "QUERY = $QUERY"
     echo "URL = $URL"
 
-    local tmp_file=${TMP_DIR}/local_id_${LOCAL_ID_COUNTER}_$$.xml
+    local tmp_file=$(tmp_file_name local_id_fail)
     add_tmp_file $tmp_file
-    UNSUP_Q_COUNTER=$((${LOCAL_ID_COUNTER} + 1))
 
     if ! curl -s -S --write-out '<!-- http_code=%{http_code} -->' $URL > $tmp_file
     then
@@ -790,7 +820,7 @@ test_localId_fail () {
     if [ $status -ne 0 ]
     then
 	failure "Could not parse response for query: $q"
-    elif [ -n "$numRecs" && "$numRecs" != 0 ]
+    elif [ -n "$numRecs" ] && [ "$numRecs" != 0 ]
     then
 	failure "expected no results for query $q, found $numRecs matches"
     fi
@@ -855,11 +885,7 @@ done
 echo
 echo '### Testing search by localId'
 echo
-test_localId_success '121' 'Death of a pirate :'
-test_localId_success '16' 'PIRATE HUNTING : THE FIGHT AGAINST PIRATES, PRIVATEERS, AND SEA RAIDERS FROM ANTIQUITY TO THE PRESENT'
-test_localId_success '114' 'The cultures of Maimonideanism :'
-test_localId_success '109' 'Death at the fair /'
-test_localId_success 'wbm-123' 'Cornelii Jansenii Episcopi gandavensis Paraphrasis in omnes Psalmos Davidicos, cum argumentis et annotationibus :'
+test_localId_success_wrapper 'history OR death OR pirate'
 test_localId_fail '11234124312431214243'
 test_localId_fail '112-12'
 test_localId_fail '11*12'
