@@ -14,13 +14,16 @@ AUTHOR="Tod Olson"
 # START CONFIGURE
 SRU_HOST=${SRU_HOST:-http://tst.docstore.ole.kuali.org}
 SRU_BASE="${SRU_HOST}/sru"
-echo "TEMPORARY hack: use SRU 1.1 until development switched namespaces - TAO 2013-08-23"
-#SRU_VERSION_DFLT=1.1
 SRU_VERSION_DFLT=1.2
 
 SRU_1_1_SCHEMA=xsd/srw/srw-types.xsd
 SRU_1_2_SCHEMA=xsd/srw/srw-types.xsd
 SRU_2_0_SCHEMA=xsd/search-ws/sruResponse.xsd
+#
+# Temporary hack
+#
+echo "*** Temporary hack: setting wrong schema for SRU 1.1"
+SRU_1_2_SCHEMA=xsd/search-ws/sruResponse.xsd
 
 TMP_DIR=${TMP_DIR:-/tmp}
 # END CONFIGURE
@@ -215,9 +218,7 @@ set_sru_schema() {
 	'1.1' )
 	    SRU_SCHEMA="$SRU_1_1_SCHEMA";;
 	'1.2' )
-	    # SRU_SCHEMA="$SRU_1_2_SCHEMA";;
-	    # Temporary hack
-	    SRU_SCHEMA="$SRU_2_0_SCHEMA";;
+	    SRU_SCHEMA="$SRU_1_2_SCHEMA";;
 	'2.0' )
 	    SRU_SCHEMA="$SRU_2_0_SCHEMA";;
 	*)
@@ -336,28 +337,39 @@ test_startRecord_1 () {
     local q="$1"
     test_env_init
     QUERY=$(rawurlencode "$q")
-    START_REC=1
     sru_url
     echo "query: $q"
+    echo "URL = $URL"
+
+    # First get a set of records...
+    local tmp_file_ref=$(tmp_file_name startRecord_1_seed)
+    add_tmp_file $tmp_file_ref
+
+    if ! curl -s -S --write-out '<!-- http_code=%{http_code} -->' $URL > $tmp_file_ref
+    then
+        fatal "Failed to retrieve $URL"
+	return
+    fi
+    # ...and check the first result.
+    local first_id_ref=$(xsltproc xslt/get_001.xslt $tmp_file_ref | head -n 1)
+
+    # Then make the same query with startRecord=1 and compare
+    START_REC=1
+    sru_url
     echo "URL = $URL"
 
     local tmp_file=$(tmp_file_name startRecord_1)
     add_tmp_file $tmp_file
 
-    if curl -s -S --write-out '<!-- http_code=%{http_code} -->' $URL > $tmp_file
+    if ! curl -s -S --write-out '<!-- http_code=%{http_code} -->' $URL > $tmp_file
     then
-	local status
-	xsltproc xslt/get_diagnostic_as_text.xslt $tmp_file
-	status=$?
-	echo "status=$status"
-        if [ "$status" -ne 0 ]
-        then
-            failure "startRecord=1 does not return first record"
-        else
-            return
-        fi
-    else
         fatal "Failed to retrieve $URL"
+	return
+    fi
+    local first_id=$(xsltproc xslt/get_001.xslt $tmp_file | head -n 1)
+    if [ "$first_id" != "$first_id_ref" ]
+    then
+	failure "startRecord=1 returns wrong first record"
     fi
 }
 
@@ -409,7 +421,8 @@ test_version_missing () {
     status=$?
     if [ $status -ne 0 ]
     then
-	failure "Could not get number of records, check URL response content"
+	warning "xstlproc failed with status $status"
+	failure "Could not get number of records, check URL response content "
     elif [ $numRecs -ne 0 ]
     then
 	content_errors[0]="Fatal diagnostic: numberOfRecords should be 0, but was $numRecs"
@@ -425,15 +438,15 @@ test_version_missing () {
     #
     . <(xsltproc xslt/get_diagnostic_as_text.xslt $tmp_file |  sed -n '/^[A-Z_a-z]*=/s/^/local my_/p')
     
-    if [ "$my_uri" != "$diag_uri"]
+    if [ "$my_uri" != "$diag_uri" ]
     then
 	content_errors[1]="Diagnostic uri: expected '$diag_uri'"
     fi
-    if [ "$my_details" != "$diag_details"]
+    if [ "$my_details" != "$diag_details" ]
     then
 	content_errors[2]="Diagnostic details: expected '$diag_details'"
     fi
-    if [ "$my_message" != "$diag_message"]
+    if [ "$my_message" != "$diag_message" ]
     then
 	content_errors[3]="Diagnostic message: expected '$diag_message'"
     fi
@@ -571,7 +584,7 @@ test_schema_conformance() {
 
     local tmp_file_record_data=$(tmp_file_name schema_conformance_record_data)
     local status
-    xsltproc xslt/get_record_data.xslt $tmp_file > $tmp_file_record_data
+    xsltproc xslt/get_record_data_1.xslt $tmp_file > $tmp_file_record_data
     status=$?
     add_tmp_file $tmp_file_record_data
     echo $tmp_file_record_data
@@ -602,11 +615,15 @@ test_schema_conformance() {
 #
 # Check for OPAC contents
 #
+
+# $1 = test query
+# $2 = expected barcodes
 test_opac_barcode() {
     local q="$1"
-    local barcode_expected="$2"
+    local barcode_expected=$(echo $2 | tr ' ' "\n" | sort)
 
     test_env_init
+    RECORD_SCHEMA=opac
     QUERY=$(rawurlencode "$q")
     sru_url
     echo "query: $q"
@@ -620,20 +637,13 @@ test_opac_barcode() {
         fatal "Failed to retrieve $URL"
 	return
     fi
-    local response_version="$(xsltproc xslt/get_sru_version.xslt $tmp_file)"
-    echo "Response version: $response_version"
-    if ! set_sru_schema "${tmp_file}"
-    then
-	failure "Unrecognized SRU version"
-	return
-    fi
 
     local barcode_returned
-    barcode_returned=$(xsltproc xslt/get_barcode.xslt $tmp_file)
+    barcode_returned=$(xsltproc xslt/get_barcode.xslt $tmp_file | sort)
     if [ -z "$barcode_returned" ]
     then
 	failure "Barcode not found in query $q"
-    elif [ "$barcode_returned" != "$barcode_expected"]
+    elif [ "$barcode_returned" != "$barcode_expected" ]
     then
 	failure "Barcode returned != Barcode expected: $barcode_returned != $barcode_expected"
     fi
@@ -841,7 +851,7 @@ echo
 echo '### Testing SRU parameter startRecord'
 echo
 test_startRecord_0
-test_startRecord_1 'isbn any 9781439206188'
+test_startRecord_1 'history'
 echo
 echo '### Testing SRU parameter version'
 echo
@@ -851,12 +861,12 @@ test_version_1_2
 echo
 echo '### Testing schema conformance'
 echo
-test_schema_conformance 'title any pirate' marcxml
-test_schema_conformance 'pirate' OPAC
+test_schema_conformance 'title all "circulation smoke test"' marcxml
+test_schema_conformance 'title all "circulation smoke test"' OPAC
 echo
 echo '### Testing OPAC contents'
 echo
-test_opac_barcode 'localId=wbm-121' 'mq6641488'
+test_opac_barcode 'title all "circulation smoke test"' '7163535463877351 0330648197543947'
 echo
 echo '### Testing CQL Level 0'
 echo

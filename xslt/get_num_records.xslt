@@ -6,7 +6,7 @@
   </xsl:template>
   
   <xsl:template match="*[local-name()='numberOfRecords']">
-    <xsl:value-of select="text()"/>
+    <xsl:value-of select="concat(text(), '&#x0A;')"/>
   </xsl:template>
   
   <xsl:template match="*[local-name()='diagnostics']">

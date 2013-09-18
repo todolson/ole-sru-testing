@@ -17,7 +17,7 @@
   </xsl:template>
   
   <xsl:template match="//circulation[1]/itemId">
-    <xsl:value-of select="text()"/>
+    <xsl:value-of select="concat(text(), '&#x0a;')"/>
   </xsl:template>
   
 </xsl:stylesheet>
