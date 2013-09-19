@@ -432,11 +432,12 @@ test_version_missing () {
     #
     local diag_uri='info:srw/diagnostic/1/7'
     local diag_details='version'
-    local diag_message='Mandatory parameter is missing'
+    local diag_message='Mandatory parameter not supplied'
     #
     # Leverage format of output text to set local variables
     #
-    . <(xsltproc xslt/get_diagnostic_as_text.xslt $tmp_file |  sed -n '/^[A-Z_a-z]*=/s/^/local my_/p')
+    . <(xsltproc xslt/get_diagnostic_as_text.xslt $tmp_file |
+	sed -n -e '/^[A-Z_a-z]*=/s/^/local my_/' -e 's/=\(.*\)/="\1"/p')
     
     if [ "$my_uri" != "$diag_uri" ]
     then
@@ -452,7 +453,7 @@ test_version_missing () {
     fi
     if [ ${#content_errors[@]} -ne 0 ]
     then
-	local msg=$(printf "%s\n" "Content problems:" ${content_errors[*]})
+	local msg=$(printf "%s\n" "Content propblems:" ${content_errors[*]})
 	failure "$msg"
     fi
 }
@@ -858,6 +859,7 @@ echo
 test_version_missing
 test_version_1_1
 test_version_1_2
+exit
 echo
 echo '### Testing schema conformance'
 echo
