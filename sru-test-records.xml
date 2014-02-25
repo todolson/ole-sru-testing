@@ -1,0 +1,305 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<collection xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+ xsi:schemaLocation="http://www.loc.gov/MARC21/slim xsd/MARC21slim.xsd"
+ xmlns="http://www.loc.gov/MARC21/slim">
+    <record>
+        <leader>     nam a22     5a 4500</leader>
+        <controlfield tag="001">321000001</controlfield>
+        <datafield tag="100" ind1="1" ind2="1">
+            <subfield code="a">Olson, Tod</subfield>
+        </datafield>
+        <datafield tag="245" ind1="0" ind2="0">
+            <subfield code="a">SRU Test / </subfield>
+            <subfield code="c">Tod Olson</subfield>
+        </datafield>
+        <datafield tag="260" ind1=" " ind2=" ">
+            <subfield code="c">2013</subfield>
+        </datafield>
+        <datafield tag="440" ind1="0" ind2="0">
+            <subfield code="a">SRU Test</subfield>
+        </datafield>
+    </record>
+    <record>
+        <leader>     nam a22     5a 4500</leader>
+        <controlfield tag="001">321000002</controlfield>
+        <datafield tag="100" ind1="1" ind2="1">
+            <subfield code="a">Olson, Tod</subfield>
+        </datafield>
+        <datafield tag="245" ind1="0" ind2="0">
+            <subfield code="a">SRU Test title / </subfield>
+            <subfield code="c">Tod Olson</subfield>
+        </datafield>
+        <datafield tag="260" ind1=" " ind2=" ">
+            <subfield code="c">2013</subfield>
+        </datafield>
+        <datafield tag="440" ind1="0" ind2="0">
+            <subfield code="a">SRU Test</subfield>
+        </datafield>
+    </record>
+    <record>
+        <leader>     nam a22     5a 4500</leader>
+        <controlfield tag="001">321000003</controlfield>
+        <datafield tag="100" ind1="1" ind2="1">
+            <subfield code="a">Olson, Tod</subfield>
+        </datafield>
+        <datafield tag="245" ind1="0" ind2="0">
+            <subfield code="a">SRU title Test / </subfield>
+            <subfield code="c">Tod Olson</subfield>
+        </datafield>
+        <datafield tag="260" ind1=" " ind2=" ">
+            <subfield code="c">2003</subfield>
+        </datafield>
+        <datafield tag="440" ind1="0" ind2="0">
+            <subfield code="a">SRU Test</subfield>
+        </datafield>
+    </record>
+    <record>
+        <leader>     nam a22     5a 4500</leader>
+        <controlfield tag="001">321000005</controlfield>
+        <datafield tag="100" ind1="1" ind2="1">
+            <subfield code="a">Smith, John</subfield>
+        </datafield>
+        <datafield tag="245" ind1="0" ind2="0">
+            <subfield code="a">SRU author Test</subfield>
+        </datafield>
+        <datafield tag="260" ind1=" " ind2=" ">
+            <subfield code="c">2013</subfield>
+        </datafield>
+        <datafield tag="440" ind1="0" ind2="0">
+            <subfield code="a">SRU Test</subfield>
+        </datafield>
+    </record>
+    <record>
+        <leader>     nam a22     5a 4500</leader>
+        <controlfield tag="001">321000006</controlfield>
+        <datafield tag="100" ind1="1" ind2="1">
+            <subfield code="a">Smith, John</subfield>
+        </datafield>
+        <datafield tag="245" ind1="0" ind2="0">
+            <subfield code="a">SRU Test : </subfield>
+            <subfield code="b">death of a pirate</subfield>
+        </datafield>
+        <datafield tag="260" ind1=" " ind2=" ">
+            <subfield code="c">2005</subfield>
+        </datafield>
+        <datafield tag="440" ind1="0" ind2="0">
+            <subfield code="a">SRU Test</subfield>
+        </datafield>
+    </record>
+    <record>
+        <leader>     nam a22     5a 4500</leader>
+        <controlfield tag="001">321000007</controlfield>
+        <datafield tag="100" ind1="1" ind2="1">
+            <subfield code="a">Jones, Peter</subfield>
+        </datafield>
+        <datafield tag="245" ind1="0" ind2="0">
+            <subfield code="a">SRU Test</subfield>
+            <subfield code="b">pirate death / </subfield>
+            <subfield code="c">Peter Jones</subfield>
+        </datafield>
+        <datafield tag="260" ind1=" " ind2=" ">
+            <subfield code="c">1984</subfield>
+        </datafield>
+        <datafield tag="440" ind1="0" ind2="0">
+            <subfield code="a">SRU Test</subfield>
+        </datafield>
+    </record>
+    <record>
+        <leader>     nam a22     5a 4500</leader>
+        <controlfield tag="001">321000007</controlfield>
+        <datafield tag="100" ind1="1" ind2="1">
+            <subfield code="a">Jones, Peter</subfield>
+        </datafield>
+        <datafield tag="245" ind1="0" ind2="0">
+            <subfield code="a">SRU Test</subfield>
+            <subfield code="b">pirate history / </subfield>
+            <subfield code="c">Peter Jones</subfield>
+        </datafield>
+        <datafield tag="260" ind1=" " ind2=" ">
+            <subfield code="c">1972</subfield>
+        </datafield>
+        <datafield tag="440" ind1="0" ind2="0">
+            <subfield code="a">SRU Test</subfield>
+        </datafield>
+    </record>
+    <record>
+        <leader>     nam a22     5a 4500</leader>
+        <controlfield tag="001">321000007</controlfield>
+        <datafield tag="100" ind1="1" ind2="1">
+            <subfield code="a">Smith, Peter</subfield>
+        </datafield>
+        <datafield tag="245" ind1="0" ind2="0">
+            <subfield code="a">SRU Test</subfield>
+            <subfield code="b">pirate hazard / </subfield>
+            <subfield code="c">Peter Smith</subfield>
+        </datafield>
+        <datafield tag="260" ind1=" " ind2=" ">
+            <subfield code="c">1987</subfield>
+        </datafield>
+        <datafield tag="440" ind1="0" ind2="0">
+            <subfield code="a">SRU Test</subfield>
+        </datafield>
+    </record>
+    <record>
+        <leader>     nam a22     5a 4500</leader>
+        <controlfield tag="001">321000007</controlfield>
+        <datafield tag="100" ind1="1" ind2="1">
+            <subfield code="a">Smith, Peter</subfield>
+        </datafield>
+        <datafield tag="245" ind1="0" ind2="0">
+            <subfield code="a">SRU Test : </subfield>
+            <subfield code="b">Occupational hazard / </subfield>
+            <subfield code="c">Peter Smith</subfield>
+        </datafield>
+        <datafield tag="260" ind1=" " ind2=" ">
+            <subfield code="c">2007</subfield>
+        </datafield>
+        <datafield tag="440" ind1="0" ind2="0">
+            <subfield code="a">SRU Test</subfield>
+        </datafield>
+    </record>
+    <record>
+        <leader>     nam a22     5a 4500</leader>
+        <controlfield tag="001">321000008</controlfield>
+        <datafield tag="100" ind1="1" ind2="1">
+            <subfield code="a">Smith, John</subfield>
+        </datafield>
+        <datafield tag="245" ind1="0" ind2="0">
+            <subfield code="a">SRU Test :</subfield>
+            <subfield code="b">BBQ smoke / </subfield>
+            <subfield code="c">Peter Smith [different name in 100]</subfield>
+        </datafield>
+        <datafield tag="260" ind1=" " ind2=" ">
+            <subfield code="c">2009</subfield>
+        </datafield>
+        <datafield tag="440" ind1="0" ind2="0">
+            <subfield code="a">SRU Test</subfield>
+        </datafield>
+    </record>
+    <record>
+        <leader>     nam a22     5a 4500</leader>
+        <controlfield tag="001">321000009</controlfield>
+        <datafield tag="100" ind1="1" ind2="1">
+            <subfield code="a">Bush, Nancy</subfield>
+        </datafield>
+        <datafield tag="245" ind1="0" ind2="0">
+            <subfield code="a">SRU Test : </subfield>
+            <subfield code="b">Folk knitting in Estonia</subfield>
+        </datafield>
+        <datafield tag="260" ind1=" " ind2=" ">
+            <subfield code="c">2010</subfield>
+        </datafield>
+        <datafield tag="440" ind1="0" ind2="0">
+            <subfield code="a">SRU Test</subfield>
+        </datafield>
+    </record>
+    <record>
+        <leader>     nam a22     5a 4500</leader>
+        <controlfield tag="001">321000009</controlfield>
+        <datafield tag="100" ind1="1" ind2="1">
+            <subfield code="a">Rutt, Richard</subfield>
+        </datafield>
+        <datafield tag="245" ind1="0" ind2="0">
+            <subfield code="a">SRU Test : </subfield>
+            <subfield code="b">history of hand knitting</subfield>
+        </datafield>
+        <datafield tag="260" ind1=" " ind2=" ">
+            <subfield code="a">Loveland, Colo. : </subfield>
+            <subfield code="b">Interweave Press, </subfield>
+            <subfield code="c">c1987.</subfield>
+        </datafield>
+        <datafield tag="440" ind1="0" ind2="0">
+            <subfield code="a">SRU Test</subfield>
+        </datafield>
+    </record>
+    <record>
+        <leader>     nam a22     5a 4500</leader>
+        <controlfield tag="001">321000009</controlfield>
+        <datafield tag="100" ind1="1" ind2="1">
+            <subfield code="a">Rutt, Richard</subfield>
+        </datafield>
+        <datafield tag="245" ind1="0" ind2="0">
+            <subfield code="a">SRU Test : </subfield>
+            <subfield code="b">history of hand knitting</subfield>
+        </datafield>
+        <datafield tag="260" ind1=" " ind2=" ">
+            <subfield code="a">Loveland, Colo. : </subfield>
+            <subfield code="b">Interweave Press, </subfield>
+            <subfield code="c">c1987.</subfield>
+        </datafield>
+        <datafield tag="440" ind1="0" ind2="0">
+            <subfield code="a">SRU Test</subfield>
+        </datafield>
+    </record>
+    <record>
+        <leader>     nam a22     5a 4500</leader>
+        <controlfield tag="001">321000010</controlfield>
+        <controlfield tag="008">110707n1987| u||| ||und u</controlfield>
+        <datafield tag="245" ind1="0" ind2="0">
+            <subfield code="a">SRU Test : </subfield>
+            <subfield code="b">008 date: 1987</subfield>
+        </datafield>
+        <datafield tag="260" ind1=" " ind2=" ">
+            <subfield code="c">c1987.</subfield>
+        </datafield>
+        <datafield tag="440" ind1="0" ind2="0">
+            <subfield code="a">SRU Test</subfield>
+        </datafield>
+    </record>
+    <record>
+        <leader>     nam a22     5a 4500</leader>
+        <controlfield tag="001">321000010</controlfield>
+        <controlfield tag="008">110707n2004| u||| ||und u</controlfield>
+        <datafield tag="245" ind1="0" ind2="0">
+            <subfield code="a">SRU Test : </subfield>
+            <subfield code="b">008 date: 2004</subfield>
+        </datafield>
+        <datafield tag="260" ind1=" " ind2=" ">
+            <subfield code="c">c1987.</subfield>
+        </datafield>
+        <datafield tag="440" ind1="0" ind2="0">
+            <subfield code="a">SRU Test</subfield>
+        </datafield>
+    </record>
+    <record>
+        <leader>     nam a22     5a 4500</leader>
+        <controlfield tag="001">321000010</controlfield>
+        <controlfield tag="008">110707n||||| u||| ||und u</controlfield>
+        <datafield tag="245" ind1="0" ind2="0">
+            <subfield code="a">SRU Test : </subfield>
+            <subfield code="b">008 date: ||||</subfield>
+        </datafield>
+        <datafield tag="260" ind1=" " ind2=" ">
+            <subfield code="c">c1987.</subfield>
+        </datafield>
+        <datafield tag="440" ind1="0" ind2="0">
+            <subfield code="a">SRU Test</subfield>
+        </datafield>
+    </record>
+    <record>
+        <leader>     nam a22     5a 4500</leader>
+        <controlfield tag="001">321000010</controlfield>
+        <controlfield tag="008">110707n    | u||| ||und u</controlfield>
+        <datafield tag="245" ind1="0" ind2="0">
+            <subfield code="a">SRU Test : </subfield>
+            <subfield code="b">008 date: '    '</subfield>
+        </datafield>
+        <datafield tag="260" ind1=" " ind2=" ">
+            <subfield code="c">c1987.</subfield>
+        </datafield>
+        <datafield tag="440" ind1="0" ind2="0">
+            <subfield code="a">SRU Test</subfield>
+        </datafield>
+    </record><record>
+        <leader>     nam a22     5a 4500</leader>
+        <controlfield tag="001">321000010</controlfield>
+        <controlfield tag="008">110707n198u| u||| ||und u</controlfield>
+        <datafield tag="245" ind1="0" ind2="0">
+            <subfield code="a">SRU Test : </subfield>
+            <subfield code="b">008 date: 198u</subfield>
+        </datafield>
+        <datafield tag="440" ind1="0" ind2="0">
+            <subfield code="a">SRU Test</subfield>
+        </datafield>
+    </record>
+</collection>
