@@ -19,11 +19,6 @@ SRU_VERSION_DFLT=1.2
 SRU_1_1_SCHEMA=xsd/srw/srw-types.xsd
 SRU_1_2_SCHEMA=xsd/srw/srw-types.xsd
 SRU_2_0_SCHEMA=xsd/search-ws/sruResponse.xsd
-#
-# Temporary hack
-#
-echo "*** Temporary hack: setting wrong schema for SRU 1.1"
-SRU_1_2_SCHEMA=xsd/search-ws/sruResponse.xsd
 
 TMP_DIR=${TMP_DIR:-/tmp}
 # END CONFIGURE
@@ -507,7 +502,7 @@ test_version_1_2 () {
     test_env_init
     SRU_VERSION=1.2
     QUERY=history
-    MAX_RECS=0
+    #MAX_RECS=0
     sru_url
     echo "URL = $URL"
 
@@ -859,7 +854,6 @@ echo
 test_version_missing
 test_version_1_1
 test_version_1_2
-exit
 echo
 echo '### Testing schema conformance'
 echo

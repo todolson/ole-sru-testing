@@ -290,7 +290,8 @@
         <datafield tag="440" ind1="0" ind2="0">
             <subfield code="a">SRU Test</subfield>
         </datafield>
-    </record><record>
+    </record>
+    <record>
         <leader>     nam a22     5a 4500</leader>
         <controlfield tag="001">321000010</controlfield>
         <controlfield tag="008">110707n198u| u||| ||und u</controlfield>
@@ -300,6 +301,32 @@
         </datafield>
         <datafield tag="440" ind1="0" ind2="0">
             <subfield code="a">SRU Test</subfield>
+        </datafield>
+    </record>
+    <record>
+        <leader>     nam a22     5a 4500</leader>
+        <controlfield tag="001">321000011</controlfield>
+        <datafield tag="245" ind1="0" ind2="0">
+            <subfield code="a">SRU Test : </subfield>
+            <subfield code="b">XML special characters</subfield>
+        </datafield>
+        <datafield tag="440" ind1="0" ind2="0">
+            <subfield code="a">SRU Test</subfield>
+        </datafield>
+        <datafield tag="500" ind1="0" ind2="0">
+            <subfield code="a">double quote (U+0022; quot): &quot;</subfield>
+        </datafield>
+        <datafield tag="500" ind1="0" ind2="0">
+            <subfield code="a">ampersand (U+0026; amp): &amp;</subfield>
+        </datafield>
+        <datafield tag="500" ind1="0" ind2="0">
+            <subfield code="a">apostrophe (U+0027; apos): &apos;</subfield>
+        </datafield>
+        <datafield tag="500" ind1="0" ind2="0">
+            <subfield code="a">less than sign (U+003C; lt): &lt;</subfield>
+        </datafield>
+        <datafield tag="500" ind1="0" ind2="0">
+            <subfield code="a">greater than sign (U+003E; gt): &gt;</subfield>
         </datafield>
     </record>
 </collection>
