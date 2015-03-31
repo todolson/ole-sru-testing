@@ -5,7 +5,7 @@ import urllib
 
 search_table = [
     {'name': 'Bib 831: 3 piano pieces / Chopin', 'bib_id':831},
-    {'name': 'Bib 3', 'bib_id':3},
+    {'name': 'Bib 3: Journal of applied behavior analysis', 'bib_id':3},
 ]
 
 def holdings_tree_search(base, bibId):
@@ -28,9 +28,10 @@ if __name__ == '__main__':
 
     host = 'ole.uchicago.edu'
     base = 'http://raspberry.lib.uchicago.edu:8080/oledocstore/documentrest/holdings/tree'
+    SLEEP = 5
     
     for s in search_table:
         bib_id = s['bib_id']
         name = s['name']
         print_result(name, holdings_tree_search(base, bib_id,))
-    
+        time.sleep(SLEEP)
