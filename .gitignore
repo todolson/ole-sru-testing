@@ -1,4 +1,8 @@
 # emacs backups
 *~
+
 # log files
 *.log
+
+# MacOS Finder info
+.DS_Store
