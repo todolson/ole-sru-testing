@@ -6,12 +6,19 @@ import urllib
 import urllib2
 import xml.etree.ElementTree as ET
 
+# Globals
+verbosity = 1
+
 search_table = [
     {'name': 'AUTHOR andrew abbott', 'sru':'dc.creator=andrew and dc.creator=abbott' , 'z3950':'' },
     {'name': 'Bib 831: 3 piano pieces / Chopin', 'sru':'id=831', 'z3950':''},
     {'name': 'Bib 3: Journal of applied behavior analysis', 'sru':'id=3', 'z3950':''},
     {'name': 'The Fundametalism Project [mult. locations]', 'sru':'id=2352069', 'z3950':''},
 ]
+
+def verbose(level, msg):
+    if verbosity >= level:
+        print msg
 
 def sru_search(base, query, schema):
     params = urllib.urlencode({'version':'1.2', 'operation':'searchRetrieve',
@@ -25,6 +32,7 @@ def sru_search(base, query, schema):
     start_time = timeit.default_timer()
     try:
         #print url
+        verbose(1, 'Search URL: ' + url)
         response = urllib2.urlopen(url)
         #print 'reading response'
         contents = response.read()
